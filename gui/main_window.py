@@ -9,6 +9,7 @@ from androidToolbox.core.adb import ADBManager
 # 引入各个功能模块的 UI (View)
 from gui.tab.network_tab import NetworkTab
 from gui.tab.logcat_tab import LogcatTab
+from gui.tab.traffic_analysis_tab import TrafficAnalysisTab
 
 class MainWindow(tk.Tk):
     def __init__(self):
@@ -51,10 +52,12 @@ class MainWindow(tk.Tk):
         # 这里的 Tab 类只负责 UI 展示，它们内部会去调用 androidToolbox 里的 Service
         self.tab_net = NetworkTab(self.notebook)
         self.tab_log = LogcatTab(self.notebook)
+        self.tab_traffic = TrafficAnalysisTab(self.notebook)
         
         # --- 添加到 Notebook ---
         self.notebook.add(self.tab_net, text=" 📶 网络诊断 ")
         self.notebook.add(self.tab_log, text=" 📜 Logcat 日志 ")
+        self.notebook.add(self.tab_traffic, text=" 📊 本地流量分析 ")
         
         # --- 绑定事件 ---
         # 当用户切换 Tab 时，触发 _on_tab_change 方法
@@ -72,20 +75,10 @@ class MainWindow(tk.Tk):
         self.tab_net.stop()
         self.tab_log.stop_auto_scroll() # 日志模块通常不停止抓取，只停止自动滚动以免干扰，或者看你需求
         
-        # 2. 获取当前选中的 Tab 索引
-        # select() 返回的是 widget ID，需要转换
-        current_tab_index = self.notebook.index("current")
-        
-        # 3. 根据索引启动对应的 Tab
-        if current_tab_index == 0:
-            # 网络诊断 Tab
+        # 2. 根据当前 Tab 启动对应任务；本地流量分析切换走后继续执行。
+        current_tab = self.notebook.nametowidget(self.notebook.select())
+        if current_tab is self.tab_net:
             self.tab_net.start()
-        elif current_tab_index == 1:
-            # 日志 Tab (通常日志是手动开始的，这里可以选择不自动 start，或者仅恢复滚动)
-            pass 
-        elif current_tab_index == 2:
-            # 性能监控 Tab
-            self.tab_mon.start()
 
     def _device_checker_loop(self):
         """
